@@ -12,8 +12,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.grails.multitenant.springsecurity.SpringSecurityCurrentTenant
+import grails.plugin.multitenant.core.CurrentTenantThreadLocal
+
 import org.codehaus.groovy.grails.commons.ConfigurationHolder
+import org.grails.multitenant.springsecurity.SpringSecurityTenantResolver
 
 /**
  *
@@ -24,26 +26,28 @@ import org.codehaus.groovy.grails.commons.ConfigurationHolder
  */
 class MultiTenantSpringSecurityGrailsPlugin {
     // the plugin version
-    def version = "0.2.0-SNAPSHOT"
+    def version = "0.3.0-SNAPSHOT"
     // the version or versions of Grails the plugin is designed for
     def grailsVersion = "1.3.5 > *"
     // the other plugins this plugin depends on
-    def dependsOn = [springSecurityCore:"1.0.1", multiTenantCore:"1.0.0"]
+    def dependsOn = [:] //[springSecurityCore:"1.0.0 > *", multiTenantCore:"1.0.0 > *"] does not play nice with Maven Repositories
     // resources that are excluded from plugin packaging
     def pluginExcludes = [
             "grails-app/views/error.gsp"
     ]
 
-    def author = "Lim Chee Kin"
-    def authorEmail = "limcheekin@vobject.com"
+    def author = "Steve Ronderos"
+    def authorEmail = "steve@ronderos.com"
     def title = "Multi-Tenant Spring Security Integration"
     def description = '''\
 Integrates the multi-tenant-core plugin (http://www.grails.org/plugin/multi-tenant-core) with the spring-security-core plugin (http://www.grails.org/plugin/spring-security-core), so that the current tenant can be determined from the authenticated principal.
 
-Provides a custom CurrentTenant implementation that uses the security context to identify the current tenant.  This allows all users to login from 
-one url instead of having to remember a special url to log in to.
+Uses a filter to set the CurrentTenant before each request based on the currently authenticated principal.
 
-This plugin's code is based on the code of multi-tenant-acegi plugin (http://www.grails.org/plugin/multi-tenant-acegi). All configurations are same with multi-tenant-acegi plugin except the tenant resolver property in Config.groovy.
+This allows all users to login from one url instead of having to remember a special url to log in to.
+
+The only configuration for this plugin is a new resolver.type.
+
 Your tenant resolver property should look like this:
 {code}
 tenant {
@@ -61,9 +65,11 @@ tenant {
 
     def doWithSpring = {
         if (ConfigurationHolder.config.tenant.resolver.type == "springSecurity") {
-            currentTenant(SpringSecurityCurrentTenant) {
-                eventBroker = ref("eventBroker")
-            }
+			
+			currentTenant(CurrentTenantThreadLocal) {
+			  eventBroker = ref("eventBroker")
+			}
+			tenantResolver(SpringSecurityTenantResolver)
         }
     }
 
